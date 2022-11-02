@@ -21,6 +21,48 @@ MobileNet 基于**深度可分离卷积**对卷积层进行优化和改进，从
 
 <img src="https://s3.bmp.ovh/imgs/2022/11/02/ea17bfe8ebf89f9e.jpg" class='img-fluid' style="width:500px; margin:auto; display:block"/>
 
+
 ## 深度可分离卷积的计算量和参数量分析
 
-标准卷积乘法计算量：$(D_{K} \cdot D_{K} \cdot M) \cdot( N \cdot D_{F} \cdot D_{F})$，后面的括号代表着一共进行了多少次卷次操作，feature_map 中一个数值就对应着一次卷积核的卷积过程，一个 feature_map 中共有 $D_{F} \cdot D_{F}$ 次卷积操作，共有 $N$ 个 feeature_map，所以一共进行了 $N \cdot D_{F} \cdot D_{F}$ 次卷积。
+> 标准卷积
+
+乘法计算量：
+$$(D_{K} \cdot D_{K} \cdot M) \cdot( N \cdot D_{F} \cdot D_{F})$$
+$ N \cdot D_{F} \cdot D_{F}$ 代表着一共进行了多少次卷次操作。feature_map 中一个数值就对应着一次卷积核的卷积过程，一个 feature_map 中共有 $D_{F} \cdot D_{F}$ 次卷积操作，共有 $N$ 个 feeature_map，所以一共进行了 $N \cdot D_{F} \cdot D_{F}$ 次卷积。一次卷积需要 $D_{K} \cdot D_{K} \cdot M$ 个乘法操作。
+
+参数量：$D_{K} \cdot D_{K} \cdot M \cdot N$
+
+> 深度可分离卷积
+
+乘法计算量：
+$$(D_{K}\cdot D_{K}) \cdot (D_{F}\cdot D_{F}\cdot M)+(M*1*1)\cdot (D_{F}\cdot D_{F}\cdot N)$$
+参数量：$M \cdot D_{K}\cdot D_{K}+M \cdot N$
+
+在深度可分离网络中引入了两个超参数 $\alpha$ 宽度超参数，用来控制网络的宽度（通道数的 M 和 N 都乘以了这个超参数）；$\rho$ 分辨率超参数，控制输入图像的尺寸，进而控制中间层 feature_map 的大小，最后得到公式：
+$$D_{K} \cdot D_{K} \cdot \alpha M \cdot \rho D_{F} \cdot \rho D_{F}+\alpha M \cdot \alpha N \cdot \rho D_{F} \cdot \rho D_{F}$$
+
+> 标准卷积与深度可分离卷积的对比
+
+乘法计算量：
+
+$$ \frac{D_{K} \cdot D_{K} \cdot M \cdot D_{F} \cdot D_{F}+M \cdot N \cdot D_{F} \cdot D_{F}}{D_{K} \cdot D_{K} \cdot M \cdot N \cdot D_{F} \cdot D_{F}} = \frac{1}{N}+\frac{1}{D_{K}^{2}}$$
+
+参数量：
+
+$$\frac{D_{k} \cdot D_{k} \cdot M+M \cdot N}{D_{k} \cdot D_{k} \cdot M \cdot N}=\frac{1}{N}+\frac{1}{D_{k}^{2}}$$
+
+## MobileNet V1网络结构
+
+<img src="https://s3.bmp.ovh/imgs/2022/11/02/13d04f70e538bdcc.jpg" class='img-fluid' style="width:500px; margin:auto; display:block"/>
+
+全局网络图，这里有 padding，所以有的计算可能不是很直观。
+
+<img src="https://s3.bmp.ovh/imgs/2022/11/02/8cb50d348ebb2249.jpg" class='img-fluid' style="width:500px; margin:auto; display:block"/>
+
+## 计算性能分析
+
+通过深度可分离卷积确实减少了参数量和计算量，下面分析两个计算参数的占比，可以发现1@1卷积资源消耗占比很大，我们尝试着优化。
+<img src="https://s3.bmp.ovh/imgs/2022/11/02/e654ff91d1eea4c0.jpg" class='img-fluid' style="width:500px; margin:auto; display:block"/>
+
+优化的策略是把卷积核拉成一个行向量，不同的卷积核的行向量进行叠加。把图像的每一次卷积的感受野拉成一个列向量，每个感受野的列向量进行列叠加。最后进行矩阵的点乘。
+<img src="https://s3.bmp.ovh/imgs/2022/11/02/559809ecd09a34ea.jpg" class='img-fluid' style="width:500px; margin:auto; display:block"/>
