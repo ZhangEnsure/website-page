@@ -64,5 +64,5 @@ $$\frac{D_{k} \cdot D_{k} \cdot M+M \cdot N}{D_{k} \cdot D_{k} \cdot M \cdot N}=
 通过深度可分离卷积确实减少了参数量和计算量，下面分析两个计算参数的占比，可以发现1@1卷积资源消耗占比很大，我们尝试着优化。
 <img src="https://s3.bmp.ovh/imgs/2022/11/02/e654ff91d1eea4c0.jpg" class='img-fluid' style="width:500px; margin:auto; display:block"/>
 
-优化的策略是把卷积核拉成一个行向量，不同的卷积核的行向量进行叠加。把图像的每一次卷积的感受野拉成一个列向量，每个感受野的列向量进行列叠加。最后进行矩阵的点乘。
+优化的策略是把卷积核拉成一个行向量，不同的卷积核的行向量进行叠加。把图像的每一次卷积的感受野拉成一个列向量，每个感受野的列向量进行列叠加。最后进行矩阵的点乘。在 MobileNet V1 中的 1@1 卷积天然就是一个排列好的向量，所以运算速度较快。
 <img src="https://s3.bmp.ovh/imgs/2022/11/02/559809ecd09a34ea.jpg" class='img-fluid' style="width:500px; margin:auto; display:block"/>
